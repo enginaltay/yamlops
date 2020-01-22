@@ -1,0 +1,35 @@
+apiVersion: voyager.appscode.com/v1beta1
+kind: Ingress
+metadata:
+  name: frks-tcp-ingress
+  namespace: default
+  annotations:
+    ingress.appscode.com/type: NodePort
+    ingress.appscode.com/use-node-port: "true"
+    ingress.appscode.com/replicas: '1'
+spec:
+  rules:
+  - host: <host_here>
+    tcp:
+      nodePort: '32667'
+      port: '5000'
+      noTLS: true
+      backend:
+        serviceName: tcp-app
+        servicePort: '5000'
+        loadBalanceOn: leastconn
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frks-tcp-ingress
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: frks-tcp-ingress
+  minReplicas: 1
+  maxReplicas: 5
+targetCPUUtilizationPercentage: 20%
+

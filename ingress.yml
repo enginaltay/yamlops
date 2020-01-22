@@ -1,0 +1,45 @@
+---
+apiVersion: voyager.appscode.com/v1beta1
+kind: Ingress
+metadata:
+  name: http-ingress
+  namespace: default
+  annotations:
+    ingress.appscode.com/type: NodePort
+    ingress.appscode.com/use-node-port: "true"
+    ingress.appscode.com/replicas: '1'
+spec:
+  rules:
+  - host: kubetest.frks.net
+    http:
+      nodePort: '32666'
+      paths:
+      - path: /api
+        backend:
+          serviceName: flask-app
+          servicePort: '5000'
+          loadBalanceOn: roundrobin
+  - host: <host_here>
+    http:
+      nodePort: '32666'
+      paths:
+      - path: /bapi
+        backend:
+          serviceName: flask-app2
+          servicePort: '5000'
+          loadBalanceOn: roundrobin
+
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: voyager-frks-ingress
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: voyager-frks-ingress
+  minReplicas: 1
+  maxReplicas: 5
+targetCPUUtilizationPercentage: 20%

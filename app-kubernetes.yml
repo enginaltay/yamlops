@@ -1,0 +1,92 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-api
+  labels:
+    app: flask-api
+spec:
+  revisionHistoryLimit: 3
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 33%
+  template:
+    metadata:
+      labels:
+        app: flask-api
+    spec:
+      containers:
+      - name: flask-app
+        image: <image_register_here>
+        ports:
+        - containerPort: 5000
+          name: flask-api
+        resources:
+          limits:
+            cpu: 300m
+            memory: 1Gi
+          requests:
+            cpu: 300m
+            memory: 500Mi
+        readinessProbe:
+          successThreshold: 2
+          failureThreshold: 3
+          periodSeconds: 3
+          initialDelaySeconds: 5
+          httpGet:
+            path: /api/version
+            port: 5000
+            scheme: HTTP
+        livenessProbe:
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 3
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+          httpGet:
+            path: /api/version
+            port: 5000
+            scheme: HTTP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-api
+  labels:
+    name: flask-api
+spec:
+  type: ClusterIP    # default
+  #ClusterIP: None   # for Headless Services
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+  selector:
+    # This needs to match the selector in the RC/Deployment
+    app: flask-api
+
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: flask-api-autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: flask-api
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 5
+  

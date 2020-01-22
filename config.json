@@ -1,0 +1,4 @@
+{
+  "MONGO_DB": "taskdb",
+  "MONGO_COLLECTION": "tasks"
+}
